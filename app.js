@@ -221,6 +221,13 @@ function generateId() {
     return Math.random().toString(36).substr(2, 9);
 }
 
+// Compact number format for calendar cells
+function fmtAmt(n) {
+    if (n >= 10000) return (n / 10000).toFixed(n % 10000 === 0 ? 0 : 1) + '万';
+    if (n >= 1000) return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + 'k';
+    return Math.round(n).toString();
+}
+
 function getCategoryColor(category) {
     const c = category || 'A';
     const colors = {
@@ -607,12 +614,12 @@ function renderCalendar(events) {
             }
         });
 
-        // Income lines — compact: +¥amount (green)
+        // Income lines — full amount (green)
         Object.entries(incomeByCat).forEach(([cat, amount]) => {
             html += `<div class="calendar-event income">+¥${Math.round(amount).toLocaleString()}</div>`;
         });
 
-        // Loan repayment lines — compact: -¥amount per category (amber)
+        // Loan repayment lines per category (amber)
         ['A','B','C','D','E'].forEach(cat => {
             if (!categoryTotals[cat]) return;
             const { amount, paid } = categoryTotals[cat];
@@ -621,7 +628,7 @@ function renderCalendar(events) {
             html += `<div class="calendar-event" style="${style}">-¥${Math.round(amount).toLocaleString()}</div>`;
         });
 
-        // Daily living expense line — compact: -¥amount (amber, strikethrough if deducted)
+        // Daily living expense
         if (dayLivingExpense > 0) {
             const dStyle = dayLivingDeducted
                 ? 'border-left-color:#f59e0b;opacity:0.4;text-decoration:line-through;'

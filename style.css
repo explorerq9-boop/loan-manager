@@ -1143,14 +1143,26 @@ h1, h2, h3, h4, h5, h6 {
     .calendar-header-days {
         font-size: 0.78rem;
         padding: 0.5rem 0;
+        grid-template-columns: repeat(7, 90px);
+    }
+
+    /* Horizontally scrollable calendar */
+    .calendar-panel {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .calendar-panel > * {
+        min-width: calc(7 * 90px); /* 630px total */
     }
 
     .calendar-grid {
-        grid-auto-rows: minmax(85px, 1fr);
+        grid-template-columns: repeat(7, 90px);
+        grid-auto-rows: minmax(90px, auto);
     }
 
     .calendar-cell {
-        min-height: 85px;
+        min-height: 90px;
         padding: 5px 4px;
     }
 
@@ -1162,13 +1174,13 @@ h1, h2, h3, h4, h5, h6 {
     }
 
     .calendar-event {
-        font-size: 0.78rem;
-        padding: 2px 4px;
+        font-size: 0.72rem;
+        padding: 2px 3px;
         margin-bottom: 2px;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
+        overflow: visible;
+        text-overflow: unset;
+        max-width: none;
     }
 
     /* ---- Tables (horizontal scroll) ---- */
