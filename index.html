@@ -55,6 +55,51 @@
             </div>
         </aside>
 
+        <!-- 手机端底部导航栏 (Mobile Only) -->
+        <nav class="mobile-tab-bar" id="mobile-tab-bar">
+            <a class="mobile-tab-item active" data-target="dashboard-view" id="mob-tab-dashboard">
+                <i class="fa-solid fa-calendar-days"></i>
+                <span>日历</span>
+            </a>
+            <a class="mobile-tab-item" data-target="loans-view" id="mob-tab-loans">
+                <i class="fa-solid fa-list"></i>
+                <span>贷款</span>
+            </a>
+            <a class="mobile-tab-item" data-target="incomes-view" id="mob-tab-incomes">
+                <i class="fa-solid fa-sack-dollar"></i>
+                <span>收入</span>
+            </a>
+            <a class="mobile-tab-item" data-target="expenses-view" id="mob-tab-expenses">
+                <i class="fa-solid fa-receipt"></i>
+                <span>支出</span>
+            </a>
+            <a class="mobile-tab-item" id="mob-tab-more" onclick="document.getElementById('mobile-more-menu').classList.toggle('active')">
+                <i class="fa-solid fa-ellipsis"></i>
+                <span>更多</span>
+            </a>
+        </nav>
+
+        <!-- 手机端"更多"弹出菜单 -->
+        <div id="mobile-more-menu" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('active')">
+            <div class="modal-content glass-panel" style="max-width:340px;padding:1.5rem;border-radius:16px;position:relative;bottom:auto;">
+                <h3 style="margin-bottom:1rem;font-size:1rem;">更多操作</h3>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <button onclick="openModal('loan-modal');document.getElementById('mobile-more-menu').classList.remove('active')" class="btn-primary btn-loan"><i class="fa-solid fa-plus"></i> 记一笔新贷款</button>
+                    <button onclick="openModal('income-modal');document.getElementById('mobile-more-menu').classList.remove('active')" class="btn-primary btn-income"><i class="fa-solid fa-plus"></i> 记一笔新收入</button>
+                    <button onclick="openModal('expense-modal');document.getElementById('mobile-more-menu').classList.remove('active')" class="btn-primary btn-expense"><i class="fa-solid fa-plus"></i> 记一笔新支出</button>
+                    <div style="border-top:1px solid var(--glass-border);padding-top:10px;display:flex;gap:8px;">
+                        <button id="export-btn-mob" class="btn-secondary btn-small" style="flex:1"><i class="fa-solid fa-download"></i> 备份</button>
+                        <button id="import-btn-mob" class="btn-secondary btn-small" style="flex:1"><i class="fa-solid fa-upload"></i> 恢复</button>
+                    </div>
+                    <select id="theme-selector-mob" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-secondary);font-family:'Inter',sans-serif;font-size:0.9rem;">
+                        <option value="dark">🌙 暗夜黑</option>
+                        <option value="light">☀️ 晨曦白</option>
+                        <option value="morandi">🍵 莫兰迪灰</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
         <!-- 主内容区 -->
         <main class="main-content">
             
@@ -481,8 +526,66 @@
         const colors = { dark: '#0b0f19', light: '#f7f7f5', morandi: '#eeece7' };
         meta.setAttribute('content', colors[theme] || '#0b0f19');
       }
-      document.addEventListener('DOMContentLoaded', syncThemeColor);
-      document.getElementById('theme-selector')?.addEventListener('change', syncThemeColor);
+      document.addEventListener('DOMContentLoaded', () => {
+        syncThemeColor();
+
+        // ---- Mobile Tab Bar Navigation ----
+        const mobileTabItems = document.querySelectorAll('.mobile-tab-item[data-target]');
+        mobileTabItems.forEach(tab => {
+          tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            const target = tab.getAttribute('data-target');
+
+            // Update desktop nav too
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            const desktopNav = document.querySelector(`.nav-item[data-target="${target}"]`);
+            if (desktopNav) desktopNav.classList.add('active');
+            const targetView = document.getElementById(target);
+            if (targetView) targetView.classList.add('active');
+
+            // Update mobile tab active state
+            mobileTabItems.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            // Trigger render
+            if (target === 'dashboard-view') renderDashboard?.();
+            if (target === 'loans-view') renderLoansList?.();
+            if (target === 'incomes-view') renderIncomesList?.();
+            if (target === 'expenses-view') renderExpensesList?.();
+          });
+        });
+
+        // ---- Mobile theme selector (in More menu) ----
+        const mobThemeSel = document.getElementById('theme-selector-mob');
+        if (mobThemeSel) {
+          mobThemeSel.value = localStorage.getItem('loanManager_theme') || 'dark';
+          mobThemeSel.addEventListener('change', (e) => {
+            setTheme(e.target.value);
+            syncThemeColor();
+            // Sync desktop selector too
+            const desktopSel = document.getElementById('theme-selector');
+            if (desktopSel) desktopSel.value = e.target.value;
+          });
+        }
+
+        // Sync desktop theme selector
+        const desktopThemeSel = document.getElementById('theme-selector');
+        if (desktopThemeSel) {
+          desktopThemeSel.addEventListener('change', (e) => {
+            syncThemeColor();
+            if (mobThemeSel) mobThemeSel.value = e.target.value;
+          });
+        }
+
+        // ---- Mobile export/import buttons ----
+        document.getElementById('export-btn-mob')?.addEventListener('click', () => {
+          document.getElementById('export-btn')?.click();
+        });
+        document.getElementById('import-btn-mob')?.addEventListener('click', () => {
+          document.getElementById('import-btn')?.click();
+        });
+      });
     </script>
 </body>
 </html>

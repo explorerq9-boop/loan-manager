@@ -988,7 +988,9 @@ h1, h2, h3, h4, h5, h6 {
 .tag.interest { background: rgba(99, 102, 241, 0.2); color: #e0e7ff; }
 .tag.principal { background: rgba(245, 158, 11, 0.2); color: #fef3c7; }
 
-/* Responsive tweaks */
+/* =============================================
+   TABLET (1024px)
+   ============================================= */
 @media (max-width: 1024px) {
     .content-split {
         grid-template-columns: 1fr;
@@ -997,126 +999,222 @@ h1, h2, h3, h4, h5, h6 {
     .stats-container {
         grid-template-columns: repeat(2, 1fr);
     }
+    .stats-container .stat-card:first-child {
+        grid-column: 1 / -1;
+    }
 }
 
-/* Mobile Responsive Layout */
+/* =============================================
+   MOBILE (768px) — Bottom Tab Bar Design
+   ============================================= */
 @media (max-width: 768px) {
+    /* Fix viewport height to allow scrolling */
     .app-container {
         flex-direction: column;
-    }
-
-    /* Sidebar becomes a top nav on mobile */
-    .sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid var(--glass-border);
-        padding: 1rem;
         height: auto;
+        min-height: 100vh;
+        padding-bottom: 70px; /* Space for bottom tab bar */
     }
 
-    .logo {
-        margin-bottom: 1rem;
+    /* Hide desktop sidebar completely */
+    .sidebar {
+        display: none;
+    }
+
+    /* ---- Bottom Tab Bar ---- */
+    .mobile-tab-bar {
+        display: flex !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 500;
+        background: var(--glass-bg);
+        border-top: 1px solid var(--glass-border);
+        padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+        justify-content: space-around;
+        align-items: center;
+    }
+
+    .mobile-tab-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.65rem;
+        font-weight: 500;
+        padding: 4px 12px;
+        border-radius: 8px;
+        transition: color 0.2s;
+        cursor: pointer;
+    }
+
+    .mobile-tab-item i {
+        font-size: 1.25rem;
+    }
+
+    .mobile-tab-item.active {
+        color: var(--primary-color);
+    }
+
+    /* ---- FAB (Floating Action Button) ---- */
+    .mobile-fab {
+        display: flex !important;
+        position: fixed;
+        bottom: 75px;
+        right: 20px;
+        z-index: 600;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        font-size: 1.4rem;
+        align-items: center;
         justify-content: center;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    .nav-menu {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 8px;
+    .mobile-fab:hover, .mobile-fab:active {
+        transform: scale(1.08);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
     }
 
-    .nav-item {
-        padding: 8px 12px;
-        font-size: 0.9rem;
-    }
-
-    .sidebar-footer {
-        margin-top: 1rem;
-    }
-    
-    .sidebar-footer > button, .sidebar-footer > div {
-        margin-bottom: 8px;
-    }
-
+    /* ---- Main content ---- */
     .main-content {
         padding: 1rem;
         overflow-y: visible;
+        flex: 1;
     }
 
-    /* Dashboard Layout */
+    /* ---- Header ---- */
     .top-header {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .month-selector h2 {
-        font-size: 1.25rem;
-        min-width: 120px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
     }
 
+    .month-selector h2 {
+        font-size: 1.1rem;
+        min-width: 100px;
+    }
+
+    /* ---- Stats Grid ---- */
     .stats-container {
         grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
     }
-    
-    /* Make the first stat card span full width to balance the 5 cards */
+
     .stats-container .stat-card:first-child {
         grid-column: 1 / -1;
     }
 
-    .content-split {
-        flex-direction: column;
+    .stat-card {
+        padding: 0.85rem 1rem;
     }
 
-    .upcoming-panel {
-        width: 100%;
-        max-height: 300px;
-        order: 2; /* Move upcoming list below calendar on mobile */
+    .stat-value {
+        font-size: 1.1rem;
+    }
+
+    /* ---- Calendar ---- */
+    .content-split {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
     }
 
     .calendar-container {
         order: 1;
     }
-    
-    .calendar-days div {
-        font-size: 0.9rem;
+
+    .upcoming-panel {
+        width: 100%;
+        max-height: none;
+        order: 2;
+    }
+
+    .calendar-header-days {
+        font-size: 0.78rem;
+        padding: 0.5rem 0;
+    }
+
+    .calendar-grid {
+        grid-auto-rows: minmax(85px, 1fr);
     }
 
     .calendar-cell {
-        min-height: 80px;
+        min-height: 85px;
+        padding: 5px 4px;
     }
 
     .date-number {
-        font-size: 1.05rem;
-        width: 32px;
-        height: 32px;
+        font-size: 1rem;
+        width: 28px;
+        height: 28px;
+        font-weight: 700;
     }
 
     .calendar-event {
-        font-size: 0.85rem;
-        padding: 3px 5px;
+        font-size: 0.78rem;
+        padding: 2px 4px;
         margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
     }
 
-    /* Tables */
-    .loans-table th, .loans-table td {
-        padding: 0.75rem 0.5rem;
-        font-size: 0.85rem;
-    }
-    
+    /* ---- Tables (horizontal scroll) ---- */
     .loans-table {
         display: block;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
         white-space: nowrap;
     }
 
-    /* Modals */
+    .loans-table th, .loans-table td {
+        padding: 0.65rem 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    /* ---- Modals ---- */
+    .modal-content {
+        max-width: 100%;
+        border-radius: 16px 16px 0 0;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 90vh;
+    }
+
+    .modal-overlay.active .modal-content {
+        transform: translateY(0);
+    }
+
+    .modal-overlay .modal-content {
+        transform: translateY(100%);
+    }
+
     .form-row {
         flex-direction: column;
         gap: 0;
     }
-    
+
     .form-group.half {
         margin-bottom: 1.25rem;
     }
 }
+
+/* Always hide mobile-only elements on desktop */
+.mobile-tab-bar, .mobile-fab {
+    display: none;
+}
+
