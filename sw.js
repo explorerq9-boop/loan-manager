@@ -1,5 +1,5 @@
-// LoanManager Service Worker - v2.0
-const CACHE_NAME = 'loan-manager-v2';
+// LoanManager Service Worker - v3.0
+const CACHE_NAME = 'loan-manager-v3';
 const ASSETS = [
   './',
   './index.html',
