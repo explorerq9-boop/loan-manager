@@ -187,12 +187,13 @@ function loadData() {
         }
     }
 
-    // Load expenses
-    const savedExpenses = localStorage.getItem('loanManager_expenses');
-    let parsedExpenses = savedExpenses ? JSON.parse(savedExpenses) : [];
-    if (parsedExpenses.length > 0) {
-        expenses = parsedExpenses;
+    // Load expenses — only use defaults if key has NEVER been set
+    const savedExpensesRaw = localStorage.getItem('loanManager_expenses');
+    if (savedExpensesRaw !== null) {
+        // Key exists: use whatever is saved (even if empty array)
+        expenses = JSON.parse(savedExpensesRaw);
     } else {
+        // First time ever — load sensible defaults
         expenses = [
             { id: generateId(), name: '餐饮伙食', amount: 3500, day: 1, category: '餐饮' },
             { id: generateId(), name: '日用购物', amount: 800, day: 1, category: '生活' },
@@ -606,27 +607,26 @@ function renderCalendar(events) {
             }
         });
 
-        // Income lines — one per category, mint green
+        // Income lines — compact: +¥amount (green)
         Object.entries(incomeByCat).forEach(([cat, amount]) => {
-            html += `<div class="calendar-event income">收入 ¥${Math.round(amount).toLocaleString()} (${cat})</div>`;
+            html += `<div class="calendar-event income">+¥${Math.round(amount).toLocaleString()}</div>`;
         });
 
-
-        // One compact line per category, sorted A→E — all amber so they're distinct from green income
+        // Loan repayment lines — compact: -¥amount per category (amber)
         ['A','B','C','D','E'].forEach(cat => {
             if (!categoryTotals[cat]) return;
             const { amount, paid } = categoryTotals[cat];
             const isAllPaid = paid >= amount;
             const style = `border-left-color:#f59e0b;color:#fbbf24;${isAllPaid ? 'opacity:0.4;text-decoration:line-through;' : ''}`;
-            html += `<div class="calendar-event" style="${style}">支出 ¥${Math.round(amount).toLocaleString()} (${cat})</div>`;
+            html += `<div class="calendar-event" style="${style}">-¥${Math.round(amount).toLocaleString()}</div>`;
         });
 
-        // Daily living expense line — amber, with strikethrough if auto-deducted
+        // Daily living expense line — compact: -¥amount (amber, strikethrough if deducted)
         if (dayLivingExpense > 0) {
             const dStyle = dayLivingDeducted
                 ? 'border-left-color:#f59e0b;opacity:0.4;text-decoration:line-through;'
                 : 'border-left-color:#f59e0b;color:#fbbf24;';
-            html += `<div class="calendar-event" style="${dStyle}">生活 ¥${Math.round(dayLivingExpense).toLocaleString()}</div>`;
+            html += `<div class="calendar-event" style="${dStyle}">-¥${Math.round(dayLivingExpense).toLocaleString()}</div>`;
         }
 
         html += `</div>`;
