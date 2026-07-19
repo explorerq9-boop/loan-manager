@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账单日历 - LoanManager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-512.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="账单日历">
+    <meta name="theme-color" content="#0b0f19" id="theme-color-meta">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏导航 -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-wallet"></i>
+                <span>LoanManager</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-target="dashboard-view"><i class="fa-solid fa-calendar-days"></i> 日历与概览</a>
+                <a href="#" class="nav-item" data-target="loans-view"><i class="fa-solid fa-list"></i> 我的贷款</a>
+                <a href="#" class="nav-item" data-target="incomes-view"><i class="fa-solid fa-sack-dollar"></i> 我的收入</a>
+                <a href="#" class="nav-item" data-target="expenses-view"><i class="fa-solid fa-receipt"></i> 日常支出</a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="add-loan-btn" class="btn-primary btn-loan"><i class="fa-solid fa-plus"></i> 记一笔新贷款</button>
+                <button id="add-income-btn" class="btn-primary btn-income"><i class="fa-solid fa-plus"></i> 记一笔新收入</button>
+                <button id="add-expense-btn" class="btn-primary btn-expense"><i class="fa-solid fa-plus"></i> 记一笔新支出</button>
+                
+                <div style="border-top: 1px solid var(--glass-border); padding-top: 15px; display: flex; gap: 8px;">
+                    <button id="export-btn" class="btn-secondary btn-small" style="flex: 1;"><i class="fa-solid fa-download"></i> 备份</button>
+                    <button id="import-btn" class="btn-secondary btn-small" style="flex: 1;"><i class="fa-solid fa-upload"></i> 恢复</button>
+                    <input type="file" id="import-file" style="display: none;" accept=".json">
+                </div>
+
+                <div style="margin-top: 15px; text-align: center;">
+                    <select id="theme-selector" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-secondary);font-family:'Manrope',sans-serif;font-size:0.85rem;cursor:pointer;">
+                        <option value="dark">🌙 暗夜黑 (默认)</option>
+                        <option value="light">☀️ 晨曦白</option>
+                        <option value="morandi">🍵 莫兰迪灰</option>
+                    </select>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            
+            <!-- 视图 1: 日历与概览 (默认显示) -->
+            <div id="dashboard-view" class="view-section active">
+                <header class="top-header">
+                    <div class="month-selector">
+                        <button id="prev-month" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                        <h2 id="current-month-display">2026年 7月</h2>
+                        <button id="next-month" class="icon-btn"><i class="fa-solid fa-chevron-right"></i></button>
+                        <button id="today-btn" class="btn-secondary btn-small">回到今天</button>
+                    </div>
+                </header>
+
+                <div class="dashboard-grid">
+                    <!-- 顶部统计卡片 -->
+                    <div class="stats-container">
+                        <div class="stat-card" style="border-color: var(--accent-color);">
+                            <div class="stat-icon" style="color:var(--accent-color);background:rgba(16,185,129,0.1);"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+                            <div class="stat-info">
+                                <h3>本月总收入</h3>
+                                <p class="stat-value" id="stat-total-income" style="color:var(--accent-color);">¥0.00</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
+                            <div class="stat-info">
+                                <h3>本月需还款</h3>
+                                <p class="stat-value" id="stat-total-due">¥0.00</p>
+                            </div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="stat-icon"><i class="fa-solid fa-check-circle"></i></div>
+                            <div class="stat-info">
+                                <h3>已还金额</h3>
+                                <p class="stat-value" id="stat-total-paid">¥0.00</p>
+                            </div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+                            <div class="stat-info">
+                                <h3>待还金额</h3>
+                                <p class="stat-value" id="stat-total-remaining">¥0.00</p>
+                            </div>
+                        </div>
+                        <div class="stat-card" id="stat-net-flow-card">
+                            <div class="stat-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+                            <div class="stat-info">
+                                <h3>本月净结余</h3>
+                                <p class="stat-value" id="stat-net-flow">¥0.00</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 下方：左侧近期日程，右侧日历 -->
+                    <div class="content-split">
+                        <div class="upcoming-panel glass-panel">
+                            <div class="panel-header">
+                                <h3>本月日程</h3>
+                            </div>
+                            <ul id="upcoming-list" class="upcoming-list">
+                                <!-- 动态加载近期还款 -->
+                            </ul>
+                        </div>
+                        
+                        <div class="calendar-panel glass-panel">
+                            <div class="calendar-header-days">
+                                <span>周日</span><span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span>
+                            </div>
+                            <div id="calendar-grid" class="calendar-grid">
+                                <!-- 动态生成日历格子 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 年度现金流预测图表 -->
+                    <div class="chart-panel glass-panel" style="margin-top: 20px; padding: 20px;">
+                        <h3 style="margin-bottom: 15px; font-weight: 600; color: var(--text-primary);"><i class="fa-solid fa-chart-line"></i> 未来 12 个月现金流预测</h3>
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="cashflowChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 视图 2: 我的贷款列表 -->
+            <div id="loans-view" class="view-section">
+                <header class="top-header" style="margin-bottom: 1.5rem;">
+                    <h2>我的贷款项目</h2>
+                </header>
+                <div class="stats-container loans-stats" style="margin-bottom: 2rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fa-solid fa-building-columns"></i></div>
+                        <div class="stat-info">
+                            <h3>原始贷款总额</h3>
+                            <p class="stat-value" id="stat-loans-total-original">¥0.00</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glowing-accent">
+                        <div class="stat-icon"><i class="fa-solid fa-scale-unbalanced"></i></div>
+                        <div class="stat-info">
+                            <h3>当前剩余待还本金</h3>
+                            <p class="stat-value" id="stat-loans-total-remaining">¥0.00</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel full-height">
+                    <div class="table-responsive">
+                        <table class="loans-table">
+                            <thead>
+                                <tr>
+                                    <th>分类</th>
+                                    <th>贷款机构/名称</th>
+                                    <th>本金总额</th>
+                                    <th>每月利息</th>
+                                    <th>每月还款日</th>
+                                    <th>到期日</th>
+                                    <th>收款账户</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loans-tbody">
+                                <!-- 动态加载贷款列表 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="empty-loans-state" class="empty-state" style="display: none;">
+                        <div class="empty-icon"><i class="fa-solid fa-box-open"></i></div>
+                        <p>暂无贷款数据，点击左下角添加一笔吧！</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 视图 3: 我的收入列表 -->
+            <div id="incomes-view" class="view-section">
+                <header class="top-header" style="margin-bottom: 1.5rem;">
+                    <h2>我的收入项</h2>
+                </header>
+                <div class="stats-container" style="margin-bottom: 2rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color:var(--accent-color);background:rgba(16,185,129,0.1);"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                        <div class="stat-info">
+                            <h3>每月固定总收入</h3>
+                            <p class="stat-value" id="stat-incomes-total" style="color:var(--accent-color);">¥0.00</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel full-height">
+                    <div class="table-responsive">
+                        <table class="loans-table">
+                            <thead>
+                                <tr>
+                                    <th>收入名称</th>
+                                    <th>每月预计金额</th>
+                                    <th>每月到账日</th>
+                                    <th>备注/类别</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="incomes-tbody">
+                                <!-- 动态加载收入列表 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="empty-incomes-state" class="empty-state" style="display: none;">
+                        <div class="empty-icon"><i class="fa-solid fa-wallet"></i></div>
+                        <p>暂无收入数据，点击左下角添加一笔吧！</p>
+                    </div>
+                </div>
+            </div>
+            <!-- 视图 4: 日常支出 -->
+            <div id="expenses-view" class="view-section">
+                <header class="top-header" style="margin-bottom: 1.5rem;">
+                    <h2>日常支出</h2>
+                </header>
+                <div class="stats-container" style="margin-bottom: 2rem; grid-template-columns: repeat(3,1fr);">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color:#8b5cf6;background:rgba(139,92,246,0.1);"><i class="fa-solid fa-cart-shopping"></i></div>
+                        <div class="stat-info">
+                            <h3>每月固定支出</h3>
+                            <p class="stat-value" id="stat-expenses-total" style="color:#8b5cf6;">¥0.00</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color:var(--danger-color);background:rgba(244,63,94,0.1);"><i class="fa-solid fa-scale-unbalanced-flip"></i></div>
+                        <div class="stat-info">
+                            <h3>贷款 + 支出合计</h3>
+                            <p class="stat-value" id="stat-expenses-total-burden" style="color:var(--danger-color);">¥0.00</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color:var(--success-color);background:rgba(16,185,129,0.1);"><i class="fa-solid fa-piggy-bank"></i></div>
+                        <div class="stat-info">
+                            <h3>真实可支配净收入</h3>
+                            <p class="stat-value" id="stat-expenses-disposable" style="color:var(--success-color);">¥0.00</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel full-height">
+                    <div class="table-responsive">
+                        <table class="loans-table" id="expenses-table">
+                            <thead>
+                                <tr>
+                                    <th>支出名称</th>
+                                    <th>每月预计金额</th>
+                                    <th>每月扣款日</th>
+                                    <th>类别</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenses-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div id="empty-expenses-state" class="empty-state" style="display: none;">
+                        <div class="empty-icon"><i class="fa-solid fa-receipt"></i></div>
+                        <p>暂无支出数据，点击左下角添加一笔吧！</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 添加/编辑贷款 Modal -->
+    <div id="loan-modal" class="modal-overlay">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3 id="modal-title">添加新贷款</h3>
+                <button class="close-modal icon-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="loan-form">
+                <input type="hidden" id="loan-id">
+                
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>贷款分类</label>
+                        <input type="text" id="loan-category" placeholder="例如：A组、企业、个人等" value="A">
+                    </div>
+                    <div class="form-group half">
+                        <label>贷款机构/名称 <span class="required">*</span></label>
+                        <input type="text" id="loan-name" placeholder="例如：漓江银行" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>贷款类型 <span class="required">*</span></label>
+                        <select id="loan-type" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.2); color: var(--text-primary); font-family: 'Inter', sans-serif;">
+                            <option value="interest_only" style="background: #1e293b; color: white;">先息后本 (到期还一大笔本金)</option>
+                            <option value="amortized" style="background: #1e293b; color: white;">等额本息/分期 (每月固定还款，无期末大额本金)</option>
+                        </select>
+                    </div>
+                    <div class="form-group half">
+                        <label>原始本金 (元) <span class="required">*</span></label>
+                        <input type="number" id="loan-principal" placeholder="例如：300000" required min="0">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>当前剩余待还 (元)</label>
+                        <input type="number" id="loan-remaining" placeholder="留空则默认为原始本金" min="0">
+                    </div>
+                    <div class="form-group half">
+                        <label>每月还款额/利息 (元)</label>
+                        <input type="number" id="loan-interest" placeholder="不知道可填0" min="0">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>年化利率 (%)</label>
+                        <input type="number" id="loan-rate" placeholder="例如：5.6" step="0.01" min="0">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>每月还款日</label>
+                        <input type="number" id="loan-day" placeholder="不知道可留空" min="1" max="31">
+                    </div>
+                    <div class="form-group half">
+                        <label>到期日/最后一期</label>
+                        <input type="date" id="loan-maturity">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>收款银行/卡号</label>
+                    <input type="text" id="loan-bank" placeholder="例如：建设银行 尾号8888">
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary close-modal">取消</button>
+                    <button type="submit" class="btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 日期详情 Modal -->
+    <div id="day-modal" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3 id="day-modal-title">日期详情</h3>
+                <button class="close-modal icon-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="day-modal-content" class="day-details-list">
+                <!-- 动态填充当天需还款项 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑收入 Modal -->
+    <div id="income-modal" class="modal-overlay">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3 id="income-modal-title">添加新收入</h3>
+                <button class="close-modal icon-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="income-form">
+                <input type="hidden" id="income-id">
+                
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>收入名称 <span class="required">*</span></label>
+                        <input type="text" id="income-name" placeholder="例如：工资、租金" required>
+                    </div>
+                    <div class="form-group half">
+                        <label>每月金额 (元) <span class="required">*</span></label>
+                        <input type="number" id="income-amount" placeholder="例如：15000" required min="0">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>每月到账日</label>
+                        <input type="number" id="income-day" placeholder="不知道可留空" min="1" max="31">
+                    </div>
+                    <div class="form-group half">
+                        <label>类别</label>
+                        <select id="income-category" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-primary);font-family:'Manrope',sans-serif;">
+                            <option value="工资">工资</option>
+                            <option value="租金">租金</option>
+                            <option value="副业">副业</option>
+                            <option value="业务">业务收入</option>
+                            <option value="投资">投资</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary close-modal">取消</button>
+                    <button type="submit" class="btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加/编辑支出 Modal -->
+    <div id="expense-modal" class="modal-overlay">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3 id="expense-modal-title">添加日常支出</h3>
+                <button class="close-modal icon-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="expense-form">
+                <input type="hidden" id="expense-id">
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>支出名称 <span class="required">*</span></label>
+                        <input type="text" id="expense-name" placeholder="例如：餐饮伙食" required>
+                    </div>
+                    <div class="form-group half">
+                        <label>每月金额 (元) <span class="required">*</span></label>
+                        <input type="number" id="expense-amount" placeholder="例如：3500" required min="0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>每月扣款日</label>
+                        <input type="number" id="expense-day" placeholder="不固定可留空" min="1" max="31">
+                    </div>
+                    <div class="form-group half">
+                        <label>类别</label>
+                        <select id="expense-category" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-primary);font-family:'Manrope',sans-serif;">
+                            <option value="餐饮">餐饮</option>
+                            <option value="生活">生活</option>
+                            <option value="交通">交通</option>
+                            <option value="通讯">通讯</option>
+                            <option value="固定">固定费用</option>
+                            <option value="社交">社交人情</option>
+                            <option value="娱乐">娱乐</option>
+                            <option value="医疗">医疗健康</option>
+                            <option value="教育">子女教育</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary close-modal">取消</button>
+                    <button type="submit" class="btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+      // Register Service Worker for PWA offline support
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('✅ Service Worker registered:', reg.scope))
+            .catch(err => console.warn('SW registration failed:', err));
+        });
+      }
+
+      // Sync theme-color meta tag with selected theme
+      function syncThemeColor() {
+        const theme = localStorage.getItem('loanManager_theme') || 'dark';
+        const meta = document.getElementById('theme-color-meta');
+        if (!meta) return;
+        const colors = { dark: '#0b0f19', light: '#f7f7f5', morandi: '#eeece7' };
+        meta.setAttribute('content', colors[theme] || '#0b0f19');
+      }
+      document.addEventListener('DOMContentLoaded', syncThemeColor);
+      document.getElementById('theme-selector')?.addEventListener('change', syncThemeColor);
+    </script>
+</body>
+</html>
